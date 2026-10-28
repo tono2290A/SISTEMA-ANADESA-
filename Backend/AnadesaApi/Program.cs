@@ -39,7 +39,7 @@ builder.Services.AddScoped<BackupService>();
 builder.Services.AddScoped<ConfiguracionService>();
 builder.Services.AddHostedService<BackupProgramadoService>();
 
-var authBuilder = builder.Services.AddAuthentication(options =>
+builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -58,18 +58,6 @@ var authBuilder = builder.Services.AddAuthentication(options =>
         ClockSkew = TimeSpan.Zero
     };
 });
-
-var msClientId = builder.Configuration["MicrosoftOAuth:ClientId"];
-var msClientSecret = builder.Configuration["MicrosoftOAuth:ClientSecret"];
-if (!string.IsNullOrWhiteSpace(msClientId) && msClientId != "TU_MICROSOFT_CLIENT_ID")
-{
-    authBuilder.AddMicrosoftAccount(options =>
-    {
-        options.ClientId = msClientId;
-        options.ClientSecret = msClientSecret ?? "";
-        options.SaveTokens = true;
-    });
-}
 
 builder.Services.AddAuthorization();
 
