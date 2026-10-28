@@ -133,8 +133,12 @@ app.MapControllers();
 // SPA fallback: rutas de Angular (ej. /participantes) sirven index.html desde wwwroot
 app.MapFallbackToFile("index.html");
 
-// Solo fija el puerto local cuando NO corre bajo IIS/ANCM (MonsterASP)
-if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ASPNETCORE_APPTYPE")))
+// Solo fija el puerto local cuando corre standalone (fuera de IIS/ANCM).
+// ANCM in-process setea ASPNETCORE_APPTYPE; out-process pasa --urls/ASPNETCORE_HTTP_PORTS.
+var appType = Environment.GetEnvironmentVariable("ASPNETCORE_APPTYPE");
+var httpPorts = Environment.GetEnvironmentVariable("ASPNETCORE_HTTP_PORTS");
+var urlsConfig = app.Configuration["urls"];
+if (string.IsNullOrEmpty(appType) && string.IsNullOrEmpty(httpPorts) && string.IsNullOrEmpty(urlsConfig))
 {
     app.Urls.Add("http://0.0.0.0:5070");
 }
