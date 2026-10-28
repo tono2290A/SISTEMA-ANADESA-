@@ -3,6 +3,22 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using AnadesaApi.Services;
 
+// Diagnóstico de arranque: si algo lanza excepción, queda en un archivo visible.
+try
+{
+    await RunAsync(args);
+}
+catch (Exception ex)
+{
+    var logDir = Path.Combine(AppContext.BaseDirectory, "logs");
+    Directory.CreateDirectory(logDir);
+    var logPath = Path.Combine(logDir, "startup-error.txt");
+    File.WriteAllText(logPath, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}]\r\n{ex}\r\n\r\n");
+    throw;
+}
+
+static async Task RunAsync(string[] args)
+{
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddScoped<EmailService>();
@@ -144,3 +160,4 @@ if (string.IsNullOrEmpty(appType) && string.IsNullOrEmpty(httpPorts) && string.I
 }
 
 app.Run();
+}
