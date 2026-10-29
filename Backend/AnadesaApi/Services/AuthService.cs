@@ -210,14 +210,19 @@ public class AuthService
         cmdInsert.Parameters.AddWithValue("@codigo", codigo);
         cmdInsert.ExecuteNonQuery();
 
-        try
+        // El correo se manda en segundo plano: si SMTP está bloqueado (hosting gratis),
+        // la petición no se cuelga y el usuario recibe respuesta inmediata.
+        _ = Task.Run(async () =>
         {
-            await _emailService.EnviarCodigoRecuperacionAsync(request.Correo, codigo);
-        }
-        catch (Exception ex)
-        {
-            throw new InvalidOperationException("EMAIL_NO_ENVIADO", ex);
-        }
+            try
+            {
+                await _emailService.EnviarCodigoRecuperacionAsync(request.Correo, codigo);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "No se pudo enviar el correo de recuperación a {Correo} (SMTP puede estar bloqueado en el hosting)", request.Correo);
+            }
+        });
         return true;
     }
 

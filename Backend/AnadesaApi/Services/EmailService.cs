@@ -35,7 +35,8 @@ public class EmailService
             using var client = new SmtpClient(server, port)
             {
                 Credentials = new NetworkCredential(senderEmail, senderPassword),
-                EnableSsl = true
+                EnableSsl = true,
+                Timeout = 10000
             };
 
             await client.SendMailAsync(message);
