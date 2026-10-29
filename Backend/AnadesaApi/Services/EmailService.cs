@@ -65,7 +65,7 @@ public class EmailService
 
     private async Task EnviarPorApiAsync(string apiKey, string para, string asunto, string cuerpoHtml)
     {
-        var senderEmail = _config["Email:SenderEmail"] ?? "asociacionanadesa@gmail.com";
+        var senderEmail = _config["Email:SenderEmail"] ?? "tonoramirezrr90@gmail.com";
         var senderName = _config["Email:SenderName"] ?? "Sistema ANADESA";
 
         var payload = new
