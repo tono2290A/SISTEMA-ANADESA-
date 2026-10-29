@@ -1,5 +1,7 @@
 using System.Net;
 using System.Net.Mail;
+using System.Text;
+using System.Text.Json;
 
 namespace AnadesaApi.Services;
 
@@ -7,15 +9,24 @@ public class EmailService
 {
     private readonly IConfiguration _config;
     private readonly ILogger<EmailService> _logger;
+    private readonly IHttpClientFactory _httpFactory;
 
-    public EmailService(IConfiguration config, ILogger<EmailService> logger)
+    public EmailService(IConfiguration config, ILogger<EmailService> logger, IHttpClientFactory httpFactory)
     {
         _config = config;
         _logger = logger;
+        _httpFactory = httpFactory;
     }
 
     public async Task EnviarCorreoAsync(string para, string asunto, string cuerpoHtml)
     {
+        var apiKey = _config["Email:ApiKey"];
+        if (!string.IsNullOrWhiteSpace(apiKey))
+        {
+            await EnviarPorApiAsync(apiKey, para, asunto, cuerpoHtml);
+            return;
+        }
+
         try
         {
             var smtp = _config.GetSection("SmtpSettings");
@@ -50,6 +61,37 @@ public class EmailService
                 "si da 535 BadCredentials la app password está revocada: regenerar en myaccount.google.com/apppasswords)");
             throw;
         }
+    }
+
+    private async Task EnviarPorApiAsync(string apiKey, string para, string asunto, string cuerpoHtml)
+    {
+        var senderEmail = _config["Email:SenderEmail"] ?? "asociacionanadesa@gmail.com";
+        var senderName = _config["Email:SenderName"] ?? "Sistema ANADESA";
+
+        var payload = new
+        {
+            sender = new { email = senderEmail, name = senderName },
+            to = new[] { new { email = para } },
+            subject = asunto,
+            htmlContent = cuerpoHtml
+        };
+
+        var client = _httpFactory.CreateClient();
+        client.Timeout = TimeSpan.FromSeconds(20);
+        var req = new HttpRequestMessage(HttpMethod.Post, "https://api.brevo.com/v3/smtp/email")
+        {
+            Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json")
+        };
+        req.Headers.Add("api-key", apiKey);
+
+        var resp = await client.SendAsync(req);
+        var body = await resp.Content.ReadAsStringAsync();
+        if (!resp.IsSuccessStatusCode)
+        {
+            _logger.LogError("Brevo API {Status}: {Body}", resp.StatusCode, body);
+            throw new InvalidOperationException($"EMAIL_NO_ENVIADO: {resp.StatusCode} {body}");
+        }
+        _logger.LogInformation("Correo enviado por Brevo API a {Para}: {Asunto}", para, asunto);
     }
 
     public async Task EnviarCodigoRecuperacionAsync(string correo, string codigo)
