@@ -28,6 +28,8 @@ export const routes: Routes = [
   { path: 'monitoreo/:tipo', component: MonitoreoComponent, canActivate: [AuthGuard, permisoGuard(6)] },
   { path: 'evaluacion', component: EvaluacionesComponent, canActivate: [AuthGuard, permisoGuard(7)] },
   { path: 'evaluacion/:tipo', component: EvaluacionesComponent, canActivate: [AuthGuard, permisoGuard(7)] },
+  { path: 'evaluaciones', redirectTo: 'evaluacion', pathMatch: 'full' },
+  { path: 'evaluaciones/:tipo', redirectTo: 'evaluacion/:tipo', pathMatch: 'full' },
   { path: 'reportes', component: ReportesComponent, canActivate: [AuthGuard, permisoGuard(8)] },
   { path: '', redirectTo: 'login', pathMatch: 'full' },
   { path: '**', redirectTo: 'login' }

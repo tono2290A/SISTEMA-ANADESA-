@@ -49,7 +49,7 @@ export class DashboardComponent implements OnInit {
         const todosModulos = [
           { id_modulo: 3, nombre: 'PARTICIPANTES', descripcion: 'Gestión de participantes registrados', icon: 'fa-users', gradient: 'linear-gradient(135deg, #1E3278 0%, #4B9CD3 100%)', ruta: '/participantes' },
           { id_modulo: 6, nombre: 'MONITOREO', descripcion: 'Seguimiento y control de actividades', icon: 'fa-chart-line', gradient: 'linear-gradient(135deg, #0E6B23 0%, #0E6B23 100%)', ruta: '/monitoreo' },
-          { id_modulo: 7, nombre: 'EVALUACIONES', descripcion: 'Criterios y resultados de evaluación', icon: 'fa-clipboard-check', gradient: 'linear-gradient(135deg, #F5A623 0%, #F5A623 100%)', ruta: '/evaluaciones' },
+          { id_modulo: 7, nombre: 'EVALUACIONES', descripcion: 'Criterios y resultados de evaluación', icon: 'fa-clipboard-check', gradient: 'linear-gradient(135deg, #F5A623 0%, #F5A623 100%)', ruta: '/evaluacion/individual' },
           { id_modulo: 5, nombre: 'ACTIVIDADES', descripcion: 'Programación y facilitadores', icon: 'fa-calendar-alt', gradient: 'linear-gradient(135deg, #F5A623 0%, #F5A623 100%)', ruta: '/actividades' },
           { id_modulo: 4, nombre: 'REGISTRO ACADÉMICO', descripcion: 'Ciclos, grados e historial', icon: 'fa-graduation-cap', gradient: 'linear-gradient(135deg, #9333EA 0%, #A855F7 100%)', ruta: '/registro-academico' },
           { id_modulo: 8, nombre: 'REPORTES', descripcion: 'Informes y estadísticas', icon: 'fa-file-pdf', gradient: 'linear-gradient(135deg, #E11D48 0%, #FB7185 100%)', ruta: '/reportes' },
