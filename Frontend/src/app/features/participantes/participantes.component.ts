@@ -25,6 +25,8 @@ export class ParticipantesComponent implements OnInit {
   search = '';
   fCategoria = '';
   fGenero = '';
+  fEdadMin = '';
+  fEdadMax = '';
   fEstado = '';
   fBeca = '';
   sortDir: 'asc' | 'desc' = 'asc';
@@ -100,11 +102,21 @@ export class ParticipantesComponent implements OnInit {
   }
 
   get generos(): string[] {
-    return [...new Set(this.byPrograma.map(p => p.sexo).filter(Boolean))] as string[];
+    return ['Masculino', 'Femenino'];
+  }
+
+  get edadesDisponibles(): number[] {
+    const edades = this.byPrograma
+      .map(p => this.calcEdad(p.fecha_nacimiento))
+      .filter((e): e is number => e !== null && e >= 0);
+    if (edades.length === 0) return [];
+    const min = Math.min(...edades);
+    const max = Math.max(...edades);
+    return Array.from({ length: max - min + 1 }, (_, i) => min + i);
   }
 
   get hasFilters(): boolean {
-    return !!(this.search || this.fCategoria || this.fGenero || this.fEstado || this.fBeca);
+    return !!(this.search || this.fCategoria || this.fGenero || this.fEdadMin || this.fEdadMax || this.fEstado || this.fBeca);
   }
 
   getTabCount(tab: string): number {
@@ -126,6 +138,8 @@ export class ParticipantesComponent implements OnInit {
     this.search = '';
     this.fCategoria = '';
     this.fGenero = '';
+    this.fEdadMin = '';
+    this.fEdadMax = '';
     this.fEstado = '';
     this.fBeca = '';
     this.filtrar();
@@ -141,6 +155,14 @@ export class ParticipantesComponent implements OnInit {
     }
     if (this.fCategoria) filtered = filtered.filter(p => p.categoria_nombre === this.fCategoria);
     if (this.fGenero) filtered = filtered.filter(p => p.sexo === this.fGenero);
+    if (this.fEdadMin || this.fEdadMax) {
+      const min = this.fEdadMin ? parseInt(this.fEdadMin, 10) : 0;
+      const max = this.fEdadMax ? parseInt(this.fEdadMax, 10) : 999;
+      filtered = filtered.filter(p => {
+        const edad = this.calcEdad(p.fecha_nacimiento);
+        return edad !== null && edad >= min && edad <= max;
+      });
+    }
     if (this.fEstado === 'activo') filtered = filtered.filter(p => p.estado);
     if (this.fEstado === 'inactivo') filtered = filtered.filter(p => !p.estado);
     if (this.fBeca === 'beca') filtered = filtered.filter(p => p.beca);
@@ -156,7 +178,7 @@ export class ParticipantesComponent implements OnInit {
   toggleSort() { this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc'; this.filtrar(); }
 
   limpiarFiltros() {
-    this.search = ''; this.fCategoria = ''; this.fGenero = ''; this.fEstado = ''; this.fBeca = '';
+    this.search = ''; this.fCategoria = ''; this.fGenero = ''; this.fEdadMin = ''; this.fEdadMax = ''; this.fEstado = ''; this.fBeca = '';
     this.filtrar();
   }
 

@@ -33,7 +33,16 @@
       </select>
       <select class="filter-select" [(ngModel)]="fGenero" (change)="filtrar()">
         <option value="">Género</option>
-        <option *ngFor="let g of generos" [value]="g">{{ g }}</option>
+        <option value="Masculino">Masculino</option>
+        <option value="Femenino">Femenino</option>
+      </select>
+      <select class="filter-select" [(ngModel)]="fEdadMin" (change)="filtrar()">
+        <option value="">Edad desde</option>
+        <option *ngFor="let e of edadesDisponibles" [value]="e">{{ e }} años</option>
+      </select>
+      <select class="filter-select" [(ngModel)]="fEdadMax" (change)="filtrar()">
+        <option value="">Edad hasta</option>
+        <option *ngFor="let e of edadesDisponibles" [value]="e">{{ e }} años</option>
       </select>
       <select class="filter-select" [(ngModel)]="fEstado" (change)="filtrar()">
         <option value="">Estado</option>

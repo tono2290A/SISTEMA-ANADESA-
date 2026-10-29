@@ -107,6 +107,18 @@
 .btn-green:hover { background: #1a6d1a; }
 .btn-outline { background: transparent; border: 1px solid #E2E8F0; color: #475569; }
 .btn-outline:hover { border-color: #0E6B23; color: #0E6B23; }
+
+/* Botón visible sobre el header oscuro (Reporte) */
+.page-header .btn-outline {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  color: #fff;
+}
+.page-header .btn-outline:hover {
+  background: #fff;
+  border-color: #fff;
+  color: #1E3278;
+}
 .btn-sm { padding: 6px 12px; font-size: 12px; }
 .btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
