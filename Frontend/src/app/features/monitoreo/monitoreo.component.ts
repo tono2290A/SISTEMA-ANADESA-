@@ -244,7 +244,9 @@ export class MonitoreoComponent implements OnInit {
     this.falloParticipantesForm = false;
     this.monitoreoService.participantes(filtros).pipe(retry({ count: 2, delay: 1000 }), timeout(15000)).subscribe({
       next: p => {
-        const lista = this.porPrograma(p);
+        // Con filtro por grupo/actividad la API ya devolvió los miembros correctos
+        // (y el backend aplica el alcance del rol): NO se vuelve a filtrar por pestaña.
+        const lista = p;
         this.participantesForm = lista;
         this.falloParticipantesForm = false;
         if (this.esLoteForm) {
@@ -699,7 +701,8 @@ export class MonitoreoComponent implements OnInit {
     const filtros = this.filtrosParticipantes(this.masivo.id_grupo, this.masivo.id_programacion) || {};
     this.monitoreoService.participantes(filtros).pipe(retry({ count: 2, delay: 1000 }), timeout(15000)).subscribe({
       next: p => {
-        const lista = this.porPrograma(p);
+        // Mismo criterio que en el formulario: con grupo/actividad no se filtra por pestaña.
+        const lista = p;
         this.participantesMasivos = lista;
         this.seleccionados = new Set(lista.map(x => x.id_participante));
         this.cargandoParticipantes = false;
