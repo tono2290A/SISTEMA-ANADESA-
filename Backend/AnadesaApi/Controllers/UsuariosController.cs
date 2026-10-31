@@ -75,8 +75,9 @@ public class UsuariosController : ControladorConPermisos
         try
         {
             var result = await _usuarioService.EliminarAsync(id);
-            if (!result) return NotFound();
-            return Ok(new { message = "Usuario desactivado exitosamente" });
+            if (result == "DESACTIVADO")
+                return Ok(new { message = "Usuario desactivado (tiene evaluaciones asociadas, no se puede eliminar físicamente)." });
+            return Ok(new { message = "Usuario eliminado exitosamente" });
         }
         catch (Exception ex)
         {

@@ -302,7 +302,7 @@ export class ConfiguracionComponent implements OnInit {
           this.showToast('success', 'Usuario eliminado correctamente');
           this.cargarUsuarios();
         },
-        error: () => this.showToast('error', 'No se pudo eliminar el usuario')
+        error: (err) => this.showToast('error', err.error?.message || 'No se pudo eliminar el usuario')
       });
     };
     this.mostrarDialogo = true;

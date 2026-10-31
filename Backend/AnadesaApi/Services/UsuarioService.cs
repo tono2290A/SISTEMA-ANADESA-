@@ -214,7 +214,7 @@ public class UsuarioService
         });
     }
 
-    public async Task<bool> EliminarAsync(int id)
+    public async Task<string> EliminarAsync(int id)
     {
         return await Task.Run(() =>
         {
@@ -223,8 +223,8 @@ public class UsuarioService
             using var cmd = conn.CreateCommand();
             cmd.CommandText = "EXEC sp_EliminarUsuario @id_usuario";
             cmd.Parameters.AddWithValue("@id_usuario", id);
-            cmd.ExecuteNonQuery();
-            return true;
+            var result = cmd.ExecuteScalar();
+            return result?.ToString() ?? "ELIMINADO";
         });
     }
 }
