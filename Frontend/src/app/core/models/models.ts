@@ -24,6 +24,7 @@ export interface Usuario {
   ultimo_acceso?: string;
   fecha_creacion: string;
   tipo_usuario_nombre?: string;
+  puede_crear_grupos?: boolean;
   roles?: Rol[];
 }
 

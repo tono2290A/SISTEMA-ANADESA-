@@ -156,7 +156,11 @@ public class ParticipanteService
 
                 return dto;
             }
-            catch { return null; }
+            catch (Exception ex)
+            {
+                // No ocultar el error: el middleware lo devuelve al frontend como { message }.
+                throw new Exception($"No se pudo obtener el participante {id}: {ex.Message}", ex);
+            }
         });
     }
 
@@ -198,6 +202,7 @@ public class ParticipanteService
             outId.Direction = System.Data.ParameterDirection.Output;
             cmd.ExecuteNonQuery();
             var newId = (int)outId.Value;
+            GuardarContactoYDireccion(conn, newId, request);
             return ObtenerPorIdAsync(newId).Result!;
         });
     }
@@ -239,8 +244,61 @@ public class ParticipanteService
             cmd.Parameters.AddWithValue("@tutor_dpi", request.Familiares != null && request.Familiares.Any() ? (object?)request.Familiares[0].dpi ?? DBNull.Value : DBNull.Value);
             cmd.Parameters.AddWithValue("@tutor_telefono", request.Familiares != null && request.Familiares.Any() ? (object?)request.Familiares[0].telefono ?? DBNull.Value : DBNull.Value);
             cmd.ExecuteNonQuery();
+            GuardarContactoYDireccion(conn, id, request);
             return ObtenerPorIdAsync(id).Result;
         });
+    }
+
+    /// <summary>
+    /// Guarda contacto y direccion del participante (el sp_Actualizar/Crear no los recibe).
+    /// OBJECT_ID protege en bases donde las tablas aun no existen.
+    /// </summary>
+    private static void GuardarContactoYDireccion(SqlConnection conn, int idParticipante, CrearParticipanteRequest request)
+    {
+        if (request.Contacto != null)
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = @"
+IF OBJECT_ID('dbo.contactos_participante', 'U') IS NOT NULL
+BEGIN
+    IF EXISTS (SELECT 1 FROM contactos_participante WHERE id_participante = @id)
+        UPDATE contactos_participante
+           SET telefono_principal = @tel1, telefono_secundario = @tel2, correo = @correo,
+               contacto_emergencia = @emerg_contacto, telefono_emergencia = @emerg_tel
+         WHERE id_participante = @id
+    ELSE
+        INSERT INTO contactos_participante (id_participante, telefono_principal, telefono_secundario, correo, contacto_emergencia, telefono_emergencia)
+        VALUES (@id, @tel1, @tel2, @correo, @emerg_contacto, @emerg_tel)
+END";
+            cmd.Parameters.AddWithValue("@id", idParticipante);
+            cmd.Parameters.AddWithValue("@tel1", (object?)request.Contacto.telefono_principal ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@tel2", (object?)request.Contacto.telefono_secundario ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@correo", (object?)request.Contacto.correo ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@emerg_contacto", (object?)request.Contacto.contacto_emergencia ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@emerg_tel", (object?)request.Contacto.telefono_emergencia ?? DBNull.Value);
+            cmd.ExecuteNonQuery();
+        }
+
+        if (request.Direccion != null)
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = @"
+IF OBJECT_ID('dbo.direcciones', 'U') IS NOT NULL
+BEGIN
+    IF EXISTS (SELECT 1 FROM direcciones WHERE id_participante = @id)
+        UPDATE direcciones
+           SET id_comunidad = @id_comunidad, direccion = @direccion, referencia = @referencia
+         WHERE id_participante = @id
+    ELSE
+        INSERT INTO direcciones (id_participante, id_comunidad, direccion, referencia)
+        VALUES (@id, @id_comunidad, @direccion, @referencia)
+END";
+            cmd.Parameters.AddWithValue("@id", idParticipante);
+            cmd.Parameters.AddWithValue("@id_comunidad", (object?)request.Direccion.id_comunidad ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@direccion", (object?)request.Direccion.direccion ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@referencia", (object?)request.Direccion.referencia ?? DBNull.Value);
+            cmd.ExecuteNonQuery();
+        }
     }
 
     public async Task<bool> EliminarAsync(int id)

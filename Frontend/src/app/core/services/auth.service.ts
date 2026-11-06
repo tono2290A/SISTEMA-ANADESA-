@@ -61,4 +61,9 @@ export class AuthService {
   hasRole(role: string): boolean {
     return this.getRoles().includes(role);
   }
+
+  /** ¿Puede crear grupos? Admin siempre; demás roles por permiso individual del admin. */
+  obtenerPermisoGrupos(): Observable<{ puede: boolean }> {
+    return this.http.get<{ puede: boolean }>(`${this.apiUrl}/auth/permiso-grupos`);
+  }
 }

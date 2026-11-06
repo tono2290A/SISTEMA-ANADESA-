@@ -330,8 +330,8 @@
       <p>Administra los grupos y sus participantes. Los grupos creados aparecen aquí y se usan en Monitoreo &gt; Grupo.</p>
     </div>
 
-        <!-- Crear grupo -->
-        <div class="grupo-crear-box">
+        <!-- Crear grupo (solo admin o usuarios con el permiso otorgado) -->
+        <div class="grupo-crear-box" *ngIf="puedeCrearGrupos">
           <h3><i class="fas fa-plus-circle"></i> Crear grupo</h3>
           <div class="grupo-crear-grid">
             <div class="form-group">
@@ -355,6 +355,9 @@
               </button>
             </div>
           </div>
+        </div>
+        <div class="grupo-crear-box" *ngIf="!puedeCrearGrupos">
+          <p class="mb-0 text-muted"><i class="fas fa-info-circle me-2"></i>Su usuario aún no tiene permiso para crear grupos ni asignar participantes. El administrador puede activarlo en <strong>Usuarios &gt; Crear grupos</strong>.</p>
         </div>
 
         <!-- Lista de grupos -->
@@ -383,7 +386,7 @@
             <button class="btn-icon-sm btn-grupo" title="Ver / agregar participantes" (click)="abrirMiembros(g)">
               <i class="fas fa-user-plus"></i>
             </button>
-            <button class="btn-icon-sm btn-delete" title="Eliminar grupo" (click)="confirmarEliminarGrupo(g)">
+            <button class="btn-icon-sm btn-delete" title="Eliminar grupo" *ngIf="puedeCrearGrupos" (click)="confirmarEliminarGrupo(g)">
               <i class="fas fa-trash"></i>
             </button>
           </div>
@@ -408,14 +411,14 @@
               <div class="miembros-lista" *ngIf="!grupoDetalleCargando && miembrosVisibles.length > 0">
                 <div class="miembro-item" *ngFor="let m of miembrosVisibles">
                   <span class="miembro-nombre">{{ m.participante_nombre }}</span>
-                  <button class="btn-icon-sm btn-delete" title="Remover del grupo" (click)="confirmarRemoverMiembro(m)">
+                  <button class="btn-icon-sm btn-delete" title="Remover del grupo" *ngIf="puedeCrearGrupos" (click)="confirmarRemoverMiembro(m)">
                     <i class="fas fa-times"></i>
                   </button>
                 </div>
               </div>
             </div>
 
-            <div class="grupo-col">
+            <div class="grupo-col" *ngIf="puedeCrearGrupos">
               <h4>Agregar participantes ({{ selAgregarGrupo.size }}/{{ disponiblesFiltrados.length }})</h4>
               <div class="search-box full-width">
                 <i class="fas fa-search"></i>
@@ -442,7 +445,7 @@
             </div>
           </div>
 
-          <div class="grupo-panel-footer">
+          <div class="grupo-panel-footer" *ngIf="puedeCrearGrupos">
             <span class="seleccion-count">{{ selAgregarGrupo.size }} seleccionado(s)</span>
             <button class="btn btn-navy" (click)="agregarSeleccionadosGrupo()" [disabled]="agregandoGrupo || grupoDetalleCargando">
               <i class="fas" [ngClass]="agregandoGrupo ? 'fa-spinner fa-spin' : 'fa-user-plus'"></i> Agregar al grupo

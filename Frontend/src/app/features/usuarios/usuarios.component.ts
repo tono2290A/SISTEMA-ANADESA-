@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { UsuarioService, RolService } from '../../core/services/usuario.service';
+import { AuthService } from '../../core/services/auth.service';
 import { LayoutComponent } from '../../shared/components/layout/layout.component';
 import { Usuario, CrearUsuarioRequest, Rol } from '../../core/models/models';
 
@@ -20,6 +21,8 @@ export class UsuariosComponent implements OnInit {
   mostrarFormulario = false;
   editando = false;
   editId = 0;
+  mensaje = '';
+  mensajeTipo = 'success';
 
   form: any = {
     id_tipo_usuario: 0,
@@ -35,7 +38,16 @@ export class UsuariosComponent implements OnInit {
     roles: []
   };
 
-  constructor(private usuarioService: UsuarioService, private rolService: RolService) {}
+  constructor(
+    private usuarioService: UsuarioService,
+    private rolService: RolService,
+    private auth: AuthService
+  ) {}
+
+  /** Solo el administrador ve el switch de "crear grupos". */
+  get esAdmin(): boolean {
+    return this.auth.hasRole('Administrador');
+  }
 
   ngOnInit() {
     this.cargarUsuarios();
@@ -107,6 +119,30 @@ export class UsuariosComponent implements OnInit {
     if (confirm('Esta seguro de desactivar al usuario ' + u.usuario + '?')) {
       this.usuarioService.Eliminar(u.id_usuario).subscribe(() => this.cargarUsuarios());
     }
+  }
+
+  /** El administrador activa/desactiva quién puede crear grupos y asignar participantes. */
+  alternarPermisoGrupos(u: Usuario, ev: Event) {
+    const input = ev.target as HTMLInputElement;
+    const nuevo = input.checked;
+    const anterior = !!u.puede_crear_grupos;
+    u.puede_crear_grupos = nuevo;
+    this.usuarioService.CambiarPermisoGrupos(u.id_usuario, nuevo).subscribe({
+      next: () => this.mostrarMensaje(
+        nuevo ? `Permiso de crear grupos otorgado a ${u.usuario}.` : `Permiso de crear grupos retirado a ${u.usuario}.`,
+        'success'),
+      error: (err) => {
+        u.puede_crear_grupos = anterior;
+        input.checked = anterior;
+        this.mostrarMensaje(err?.error?.message || 'No se pudo actualizar el permiso.', 'danger');
+      }
+    });
+  }
+
+  mostrarMensaje(texto: string, tipo: string) {
+    this.mensaje = texto;
+    this.mensajeTipo = tipo;
+    setTimeout(() => { this.mensaje = ''; }, 4000);
   }
 
   cerrarFormulario() {

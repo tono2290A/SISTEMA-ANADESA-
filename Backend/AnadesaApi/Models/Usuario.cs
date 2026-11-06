@@ -20,6 +20,7 @@ public class Usuario
     public string? telefono { get; set; }
     public string? fotografia { get; set; }
     public bool estado { get; set; }
+    public bool puede_crear_grupos { get; set; }
     public DateTime? ultimo_acceso { get; set; }
     public DateTime fecha_creacion { get; set; }
 

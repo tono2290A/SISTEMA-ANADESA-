@@ -79,4 +79,28 @@ public class PermisoService
             return false;
         }
     }
+
+    /// <summary>
+    /// Permiso individual de grupos (usuarios.puede_crear_grupos): lo otorga el
+    /// administrador desde la lista de usuarios. false si la columna no existe aun.
+    /// </summary>
+    public async Task<bool> PuedeGestionarGruposAsync(int idUsuario)
+    {
+        try
+        {
+            using var conn = CreateConnection();
+            await conn.OpenAsync();
+            await using var cmd = conn.CreateCommand();
+            cmd.CommandTimeout = 15;
+            cmd.CommandText = "SELECT puede_crear_grupos FROM usuarios WHERE id_usuario = @id_usuario";
+            cmd.Parameters.Add("@id_usuario", SqlDbType.Int).Value = idUsuario;
+            var result = await cmd.ExecuteScalarAsync();
+            return result != null && Convert.ToBoolean(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "PuedeGestionarGrupos {Usuario}", idUsuario);
+            return false;
+        }
+    }
 }

@@ -9,6 +9,7 @@ import { ProgramasTabsComponent } from '../../shared/components/programas-tabs/p
 import { ReportePreviewComponent } from '../../shared/components/reporte-preview/reporte-preview.component';
 import { ActividadService, Actividad, TipoActividad, ProgramaItem, ParticipanteAsignado, FacilitadorDisponible } from '../../core/services/actividad.service';
 import { GrupoService } from '../../core/services/grupo.service';
+import { AuthService } from '../../core/services/auth.service';
 import { AlcanceService, ProgramaClave } from '../../core/services/alcance.service';
 import { CrearGrupoRequest, Grupo, GrupoParticipante, CatalogItem } from '../../core/models/models';
 
@@ -93,6 +94,8 @@ export class ActividadesComponent implements OnInit {
   filtroPartGrupo = '';
   selAgregarGrupo: Set<number> = new Set();
   agregandoGrupo = false;
+  /** Admin siempre true; demás roles: permiso individual que otorga el administrador. */
+  puedeCrearGrupos = false;
 
   mostrarDetalles = false;
   detalleItem: Actividad | null = null;
@@ -102,8 +105,10 @@ export class ActividadesComponent implements OnInit {
   cargandoDetalle = false;
 
   constructor(private actividadService: ActividadService, private grupoService: GrupoService,
-              private alcanceService: AlcanceService, private route: ActivatedRoute) {
+              private alcanceService: AlcanceService, private route: ActivatedRoute,
+              private auth: AuthService) {
     this.subTab = this.alcanceService.inicial;
+    this.puedeCrearGrupos = !!this.auth.getCurrentUser()?.puede_crear_grupos;
   }
 
   get conteoTabs(): Record<ProgramaClave, number> {
@@ -155,6 +160,11 @@ export class ActividadesComponent implements OnInit {
     this.load();
     this.actividadService.ObtenerTipos().pipe(timeout(12000)).subscribe({ next: d => this.tipos = d, error: () => {} });
     this.actividadService.ObtenerProgramas().pipe(timeout(12000)).subscribe({ next: d => this.programas = d, error: () => {} });
+    // Permiso de crear grupos (fresco, por si el administrador lo acaba de otorgar).
+    this.auth.obtenerPermisoGrupos().pipe(timeout(8000)).subscribe({
+      next: r => this.puedeCrearGrupos = r.puede,
+      error: () => {}
+    });
   }
 
   load() {
@@ -276,7 +286,7 @@ export class ActividadesComponent implements OnInit {
           this.saving = false;
         },
         error: (err) => {
-          this.showToast('error', err?.status === 403 ? 'Solo un Administrador puede eliminar grupos.' : 'No se pudo eliminar el grupo.');
+          this.showToast('error', err?.error?.message || 'No se pudo eliminar el grupo.');
           this.saving = false;
         }
       });
@@ -292,8 +302,8 @@ export class ActividadesComponent implements OnInit {
           this.cargarGruposLista();
           this.saving = false;
         },
-        error: () => {
-          this.showToast('error', 'No se pudo remover el participante.');
+        error: (err) => {
+          this.showToast('error', err?.error?.message || 'No se pudo remover el participante.');
           this.saving = false;
         }
       });
@@ -557,8 +567,7 @@ export class ActividadesComponent implements OnInit {
       },
       error: (err) => {
         this.savingNuevoGrupo = false;
-        if (err?.status === 403) this.showToast('error', 'Solo un Administrador puede crear grupos.');
-        else this.showToast('error', err?.error?.message || 'No se pudo crear el grupo.');
+        this.showToast('error', err?.error?.message || 'No se pudo crear el grupo.');
       }
     });
   }
@@ -735,7 +744,7 @@ export class ActividadesComponent implements OnInit {
       next: () => {
         this.asistenciaMap = { ...this.asistenciaMap, [p.id_participante]: nuevo };
         this.marcandoAsistencia = null;
-        this.showToast('success', nuevo ? `${p.nombre}: presente ✓` : `${p.nombre}: ausente ✗`);
+        this.showToast('success', `Asistencia tomada: ${p.nombre} ${nuevo ? '✓ presente' : '✗ ausente'}`);
       },
       error: (err) => {
         this.marcandoAsistencia = null;

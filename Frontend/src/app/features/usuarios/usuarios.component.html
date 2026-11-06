@@ -12,6 +12,9 @@
           <input type="text" class="form-control" placeholder="Buscar por nombre, usuario o correo..." [(ngModel)]="filtro" (input)="filtrar()">
         </div>
       </div>
+      <div *ngIf="mensaje" class="alert" [class.alert-success]="mensajeTipo === 'success'" [class.alert-danger]="mensajeTipo === 'danger'" role="alert">
+        {{ mensaje }}
+      </div>
       <div class="table-responsive">
         <table class="table table-hover">
           <thead class="table-light">
@@ -21,6 +24,7 @@
               <th>Correo</th>
               <th>Rol</th>
               <th>Estado</th>
+              <th *ngIf="esAdmin" title="El administrador decide quién puede crear grupos y asignar participantes">Crear grupos</th>
               <th>Acciones</th>
             </tr>
           </thead>
@@ -34,6 +38,17 @@
                 <span class="badge" [class.bg-success]="u.estado" [class.bg-danger]="!u.estado">
                   {{ u.estado ? 'Activo' : 'Inactivo' }}
                 </span>
+              </td>
+              <td *ngIf="esAdmin">
+                <div class="form-check form-switch m-0 d-flex align-items-center">
+                  <input class="form-check-input" type="checkbox" role="switch"
+                         [checked]="!!u.puede_crear_grupos"
+                         (change)="alternarPermisoGrupos(u, $event)"
+                         [title]="u.puede_crear_grupos ? 'Puede crear grupos: activado' : 'Puede crear grupos: desactivado'">
+                  <small class="ms-2 text-nowrap" [class.text-success]="u.puede_crear_grupos" [class.text-muted]="!u.puede_crear_grupos">
+                    {{ u.puede_crear_grupos ? 'Sí' : 'No' }}
+                  </small>
+                </div>
               </td>
               <td>
                 <button class="btn btn-sm btn-outline-primary me-1" (click)="editar(u)"><i class="fas fa-edit"></i></button>

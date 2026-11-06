@@ -238,7 +238,17 @@ export class ParticipantesComponent implements OnInit {
     this.editando = true;
     this.editId = p.id_participante;
     this.error = '';
-    this.form = {
+    this.form = this.formDesdeParticipante(p);
+    this.mostrarModal = true;
+    // La lista no trae contacto, direccion ni familiares: cargar el detalle completo.
+    this.participanteService.ObtenerPorId(p.id_participante).subscribe({
+      next: (full) => { if (full) this.form = this.formDesdeParticipante(full); },
+      error: () => {}
+    });
+  }
+
+  formDesdeParticipante(p: Participante) {
+    return {
       id_programa: p.id_programa, id_proyecto: p.id_proyecto || undefined,
       id_categoria: p.id_categoria, id_comunidad: p.id_comunidad || undefined,
       primer_nombre: p.primer_nombre, segundo_nombre: p.segundo_nombre || '',
@@ -268,7 +278,6 @@ export class ParticipantesComponent implements OnInit {
         parentesco: f.parentesco || '', responsable: f.responsable
       })) : [{ primer_nombre: '', segundo_nombre: '', primer_apellido: '', segundo_apellido: '', dpi: '', telefono: '', correo: '', parentesco: '', responsable: true }]
     };
-    this.mostrarModal = true;
   }
 
   cerrarModal() { this.mostrarModal = false; this.error = ''; }
@@ -328,7 +337,7 @@ export class ParticipantesComponent implements OnInit {
     if (this.dialogoTipo === 'delete' && this.dialogoItem) {
       this.participanteService.Eliminar(this.dialogoItem.id_participante).subscribe({
         next: () => { this.showToast('success', `Participante '${this.dialogoItem.primer_nombre} ${this.dialogoItem.primer_apellido}' eliminado.`); this.load(); this.saving = false; },
-        error: () => { this.showToast('error', 'No se pudo eliminar el participante'); this.saving = false; }
+        error: (err) => { this.showToast('error', err?.error?.message || 'No se pudo eliminar el participante'); this.saving = false; }
       });
       return;
     }
@@ -375,7 +384,7 @@ export class ParticipantesComponent implements OnInit {
             afterSave();
           }
         },
-        error: () => { this.showToast('error', 'No se pudo registrar el participante'); this.saving = false; }
+        error: (err) => { this.showToast('error', err?.error?.message || 'No se pudo registrar el participante'); this.saving = false; }
       });
     } else if (this.dialogoTipo === 'update') {
       this.participanteService.Actualizar(this.editId, payload).subscribe({
@@ -395,7 +404,7 @@ export class ParticipantesComponent implements OnInit {
             afterSave();
           }
         },
-        error: () => { this.showToast('error', 'No se pudo actualizar el participante'); this.saving = false; }
+        error: (err) => { this.showToast('error', err?.error?.message || 'No se pudo actualizar el participante'); this.saving = false; }
       });
     }
   }

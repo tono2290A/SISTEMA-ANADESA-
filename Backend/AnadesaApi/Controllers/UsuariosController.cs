@@ -84,4 +84,21 @@ public class UsuariosController : ControladorConPermisos
             return BadRequest(new { message = ex.Message });
         }
     }
+
+    /// <summary>
+    /// Switch del administrador en la lista de usuarios: otorga/quita el permiso
+    /// individual de crear grupos y asignar participantes a ellos.
+    /// </summary>
+    [HttpPut("{id}/permiso-grupos")]
+    [Authorize(Roles = "Administrador")]
+    public async Task<IActionResult> CambiarPermisoGrupos(int id, [FromBody] PermisoGruposRequest request)
+    {
+        await _usuarioService.CambiarPermisoGruposAsync(id, request.puede);
+        return Ok(new
+        {
+            message = request.puede
+                ? "Permiso de crear grupos otorgado."
+                : "Permiso de crear grupos retirado."
+        });
+    }
 }

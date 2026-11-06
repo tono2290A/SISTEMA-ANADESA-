@@ -523,7 +523,7 @@ export class ConfiguracionComponent implements OnInit {
           this.cargarGrupos();
           this.cerrarModalGrupo();
         },
-        error: () => this.showToast('error', 'No se pudo actualizar el grupo')
+        error: (err) => this.showToast('error', err?.error?.message || 'No se pudo actualizar el grupo')
       });
     } else {
       this.grupoService.Crear(req).subscribe({
@@ -532,7 +532,7 @@ export class ConfiguracionComponent implements OnInit {
           this.cargarGrupos();
           this.cerrarModalGrupo();
         },
-        error: () => this.showToast('error', 'No se pudo crear el grupo')
+        error: (err) => this.showToast('error', err?.error?.message || 'No se pudo crear el grupo')
       });
     }
   }
@@ -547,7 +547,7 @@ export class ConfiguracionComponent implements OnInit {
           this.showToast('success', 'Grupo eliminado correctamente');
           this.cargarGrupos();
         },
-        error: () => this.showToast('error', 'No se pudo eliminar el grupo')
+        error: (err) => this.showToast('error', err?.error?.message || 'No se pudo eliminar el grupo')
       });
     };
     this.mostrarDialogo = true;
@@ -587,7 +587,7 @@ export class ConfiguracionComponent implements OnInit {
         this.cargarGrupos();
         this.cerrarModalAsignar();
       },
-      error: () => this.showToast('error', 'No se pudo asignar el participante')
+      error: (err) => this.showToast('error', err?.error?.message || 'No se pudo asignar el participante')
     });
   }
 
@@ -601,7 +601,7 @@ export class ConfiguracionComponent implements OnInit {
           this.showToast('success', 'Participante removido correctamente');
           this.cargarGrupos();
         },
-        error: () => this.showToast('error', 'No se pudo remover el participante')
+        error: (err) => this.showToast('error', err?.error?.message || 'No se pudo remover el participante')
       });
     };
     this.mostrarDialogo = true;

@@ -33,6 +33,11 @@ export class UsuarioService {
   Eliminar(id: number): Observable<any> {
     return this.http.delete(`${this.apiUrl}/${id}`);
   }
+
+  /** Switch del administrador: permiso individual de crear grupos/asignar participantes. */
+  CambiarPermisoGrupos(id: number, puede: boolean): Observable<any> {
+    return this.http.put(`${this.apiUrl}/${id}/permiso-grupos`, { puede });
+  }
 }
 
 @Injectable({ providedIn: 'root' })

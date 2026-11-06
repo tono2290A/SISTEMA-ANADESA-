@@ -138,6 +138,19 @@ public class AuthService
                 }
             }
 
+            // Permiso individual de grupos (lo otorga el administrador).
+            var puedeCrearGrupos = false;
+            try
+            {
+                using var cmdGrupos = connection.CreateCommand();
+                cmdGrupos.CommandTimeout = 15;
+                cmdGrupos.CommandText = "SELECT puede_crear_grupos FROM usuarios WHERE id_usuario = @id_usuario";
+                cmdGrupos.Parameters.AddWithValue("@id_usuario", idUsuario);
+                var vGrupos = cmdGrupos.ExecuteScalar();
+                puedeCrearGrupos = vGrupos != null && Convert.ToBoolean(vGrupos);
+            }
+            catch (Exception ex) { _logger.LogWarning(ex, "No se pudo leer puede_crear_grupos en login"); }
+
             var usuarioObj = new Usuario
             {
                 id_usuario = idUsuario,
@@ -150,6 +163,7 @@ public class AuthService
                 telefono = telefono,
                 fotografia = null,
                 estado = estado,
+                puede_crear_grupos = puedeCrearGrupos,
                 ultimo_acceso = ultimoAcceso,
                 fecha_creacion = fechaCreacion,
                 id_tipo_usuario = idTipoUsuario
@@ -174,6 +188,7 @@ public class AuthService
                     telefono = telefono,
                     fotografia = null,
                     estado = estado,
+                    puede_crear_grupos = puedeCrearGrupos,
                     ultimo_acceso = ultimoAcceso,
                     fecha_creacion = fechaCreacion,
                     tipo_usuario_nombre = tipoNombre,

@@ -41,6 +41,26 @@ public class AuthController : ControllerBase
         return Ok(await _permisoService.ObtenerPermisosAsync(idUsuario));
     }
 
+    /// <summary>
+    /// ¿Puede el usuario autenticado crear grupos y asignar participantes?
+    /// Administrador: siempre. Demás roles: permiso individual que otorga el
+    /// administrador (usuarios.puede_crear_grupos). Se consulta al entrar a Grupos.
+    /// </summary>
+    [HttpGet("permiso-grupos")]
+    [Authorize]
+    public async Task<IActionResult> PermisoGrupos()
+    {
+        var idTexto = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (!int.TryParse(idTexto, out var idUsuario))
+            return Unauthorized();
+
+        var esAdmin = User.FindAll(System.Security.Claims.ClaimTypes.Role)
+            .Any(c => c.Value.Contains("Administrador"));
+        if (esAdmin) return Ok(new { puede = true });
+
+        return Ok(new { puede = await _permisoService.PuedeGestionarGruposAsync(idUsuario) });
+    }
+
     [HttpPost("forgot-password")]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
     {

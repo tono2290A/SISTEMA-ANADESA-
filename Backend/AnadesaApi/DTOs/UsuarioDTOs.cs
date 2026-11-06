@@ -16,7 +16,13 @@ public class UsuarioDto
     public DateTime? ultimo_acceso { get; set; }
     public DateTime fecha_creacion { get; set; }
     public string? tipo_usuario_nombre { get; set; }
+    public bool puede_crear_grupos { get; set; }
     public List<RolDto>? Roles { get; set; }
+}
+
+public class PermisoGruposRequest
+{
+    public bool puede { get; set; }
 }
 
 public class CrearUsuarioRequest

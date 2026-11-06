@@ -49,6 +49,20 @@ public class UsuarioService
             }
             r.Close();
 
+            // Permiso individual de grupos (no viene en sp_ListarUsuarios).
+            try
+            {
+                using var cmdPerm = conn.CreateCommand();
+                cmdPerm.CommandText = "SELECT id_usuario, puede_crear_grupos FROM usuarios";
+                using var rp = cmdPerm.ExecuteReader();
+                while (rp.Read())
+                {
+                    var dto = list.FirstOrDefault(x => x.id_usuario == rp.GetInt32(0));
+                    if (dto != null) dto.puede_crear_grupos = rp.GetBoolean(1);
+                }
+            }
+            catch (Exception ex) { _logger.LogWarning(ex, "No se pudo leer puede_crear_grupos (ejecute el script add_puede_crear_grupos.sql)"); }
+
             // Cargar los roles de cada usuario (sp_ListarUsuarios no los trae).
             if (list.Count > 0)
             {
@@ -119,6 +133,17 @@ public class UsuarioService
                         });
                     } while (r.Read());
                 }
+
+                r.Close();
+                try
+                {
+                    using var cmdPerm = conn.CreateCommand();
+                    cmdPerm.CommandText = "SELECT puede_crear_grupos FROM usuarios WHERE id_usuario = @id";
+                    cmdPerm.Parameters.AddWithValue("@id", id);
+                    var v = cmdPerm.ExecuteScalar();
+                    dto.puede_crear_grupos = v != null && Convert.ToBoolean(v);
+                }
+                catch (Exception ex) { _logger.LogWarning(ex, "No se pudo leer puede_crear_grupos"); }
 
                 return dto;
             }
@@ -226,5 +251,17 @@ public class UsuarioService
             var result = cmd.ExecuteScalar();
             return result?.ToString() ?? "ELIMINADO";
         });
+    }
+
+    /// <summary>Apaga/enciende el permiso individual de crear grupos (switch del administrador).</summary>
+    public async Task CambiarPermisoGruposAsync(int id, bool puede)
+    {
+        using var conn = CreateConnection();
+        await conn.OpenAsync();
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = "UPDATE usuarios SET puede_crear_grupos = @puede WHERE id_usuario = @id";
+        cmd.Parameters.AddWithValue("@puede", puede);
+        cmd.Parameters.AddWithValue("@id", id);
+        await cmd.ExecuteNonQueryAsync();
     }
 }

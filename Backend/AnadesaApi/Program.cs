@@ -2,6 +2,7 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using AnadesaApi.Services;
+using AnadesaApi.Middleware;
 
 // Diagnóstico de arranque: si algo lanza excepción, queda en un archivo visible.
 try
@@ -110,6 +111,9 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+// Errores no controlados -> { message } JSON (evita respuestas 500 vacías).
+app.UseMiddleware<ManejadorErroresMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {
