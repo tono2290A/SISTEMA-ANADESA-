@@ -49,7 +49,7 @@ export class ParticipanteService {
     if (!ruta) return '';
     if (ruta.startsWith('http')) return ruta;
     // /fotos/x.jpg -> /api/fotos/x.jpg (sirve desde BD/disco y sobrevive redeploys).
-    if (ruta.startsWith('/fotos/')) return `${environment.apiUrl}/fotos/${ruta.substring(8)}`;
+    if (ruta.startsWith('/fotos/')) return `${environment.apiUrl}/fotos/${ruta.substring('/fotos/'.length)}`;
     return this.baseUrl + ruta;
   }
 }
