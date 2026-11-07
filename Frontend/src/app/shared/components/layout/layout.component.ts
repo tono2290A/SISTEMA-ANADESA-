@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnDestroy, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { Subscription, fromEvent, take } from 'rxjs';
@@ -19,16 +19,17 @@ export class LayoutComponent implements OnInit, OnDestroy {
   sidebarCollapsed = false;
   currentUser: Usuario | null = null;
   toasts: { type: string; message: string }[] = [];
+  // Fail-closed: sin permisos confirmados solo se muestra Dashboard.
   tieneInicio = true;
-  tieneParticipantes = true;
-  tieneAcademico = true;
-  tieneActividades = true;
-  tieneConfiguracion = true;
-  tieneMonitoreo = true;
+  tieneParticipantes = false;
+  tieneAcademico = false;
+  tieneActividades = false;
+  tieneConfiguracion = false;
+  tieneMonitoreo = false;
   monitoreoAbierto = false;
-  tieneEvaluacion = true;
+  tieneEvaluacion = false;
   evaluacionAbierto = false;
-  tieneReportes = true;
+  tieneReportes = false;
   esMovil = false;
   menuMovilAbierto = false;
   nombreSistema = 'ANADESA';
@@ -41,7 +42,8 @@ export class LayoutComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private permisoService: PermisoService,
     private aparienciaService: AparienciaService,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit() {
@@ -65,6 +67,9 @@ export class LayoutComponent implements OnInit, OnDestroy {
       if (ev instanceof NavigationEnd) {
         this.monitoreoAbierto = ev.urlAfterRedirects.startsWith('/monitoreo');
         this.evaluacionAbierto = ev.urlAfterRedirects.startsWith('/evaluacion');
+        // Los permisos pueden haberse cargado en un guard despues de un fallo
+        // anterior: recalcular el menu en cada navegacion.
+        this.revisarMenus();
         if (this.esMovil) this.menuMovilAbierto = false;
       }
     });
@@ -99,18 +104,20 @@ export class LayoutComponent implements OnInit, OnDestroy {
   }
 
   private revisarMenus() {
-    if (!this.permisoService.estaCargado()) {
-      // Sin datos aún (carga fallida o en curso): no ocultar el menú.
-      return;
-    }
-    this.tieneInicio = this.permisoService.puede(1, 'Consultar');
-    this.tieneParticipantes = this.permisoService.puede(3, 'Consultar');
-    this.tieneAcademico = this.permisoService.puede(4, 'Consultar');
-    this.tieneActividades = this.permisoService.puede(5, 'Consultar');
-    this.tieneMonitoreo = this.permisoService.puede(6, 'Consultar');
-    this.tieneEvaluacion = this.permisoService.puede(7, 'Consultar');
-    this.tieneReportes = this.permisoService.puede(8, 'Consultar');
-    this.tieneConfiguracion = this.permisoService.puede(9, 'Consultar');
+    const ok = this.permisoService.estaCargado();
+    // El rol "Facilitador Mujeres" nunca ve el Registro Academico (es solo
+    // para Educacion); los demas roles lo ven si su rol tiene el permiso.
+    const esMujeres = this.authService.getRoles().some(r => (r || '').includes('Mujer'));
+    // Sin permisos confirmados (carga en curso o fallo) solo Dashboard.
+    this.tieneInicio = !ok || this.permisoService.puede(1, 'Consultar');
+    this.tieneParticipantes = ok && this.permisoService.puede(3, 'Consultar');
+    this.tieneAcademico = ok && !esMujeres && this.permisoService.puede(4, 'Consultar');
+    this.tieneActividades = ok && this.permisoService.puede(5, 'Consultar');
+    this.tieneMonitoreo = ok && this.permisoService.puede(6, 'Consultar');
+    this.tieneEvaluacion = ok && this.permisoService.puede(7, 'Consultar');
+    this.tieneReportes = ok && this.permisoService.puede(8, 'Consultar');
+    this.tieneConfiguracion = ok && this.permisoService.puede(9, 'Consultar');
+    this.cdr.markForCheck();
   }
 
   getInitials(): string {

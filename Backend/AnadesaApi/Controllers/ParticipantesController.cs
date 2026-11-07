@@ -128,7 +128,9 @@ public class ParticipantesController : ControladorConPermisos
         }
 
         var rutaRelativa = $"/fotos/{nombreArchivo}";
-        await _participanteService.ActualizarFotografiaAsync(id, nombreArchivo, rutaRelativa);
+        byte[]? contenido = null;
+        try { contenido = System.IO.File.ReadAllBytes(rutaCompleta); } catch { }
+        await _participanteService.ActualizarFotografiaAsync(id, nombreArchivo, rutaRelativa, contenido);
 
         return Ok(new { ruta = rutaRelativa, message = "Fotografía subida exitosamente" });
     }

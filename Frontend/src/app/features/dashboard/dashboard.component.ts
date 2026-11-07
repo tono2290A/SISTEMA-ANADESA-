@@ -56,7 +56,11 @@ export class DashboardComponent implements OnInit {
           { id_modulo: 9, nombre: 'CONFIGURACIÓN', descripcion: 'Usuarios, roles, permisos y ajustes', icon: 'fa-cog', gradient: 'linear-gradient(135deg, #475569 0%, #64748b 100%)', ruta: '/configuracion' }
         ];
 
-        this.modulos = todosModulos.filter(m => this.permisoService.puede(m.id_modulo, 'Consultar'));
+        this.modulos = todosModulos.filter(m =>
+          this.permisoService.puede(m.id_modulo, 'Consultar') &&
+          // Registro Academico: solo para Educacion (nunca rol Facilitador Mujeres).
+          (m.id_modulo !== 4 || !this.authService.getRoles().some(r => (r || '').includes('Mujer')))
+        );
       }
     });
   }

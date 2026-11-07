@@ -560,7 +560,16 @@ export class ConfiguracionComponent implements OnInit {
     this.grupoService.ObtenerParticipantes().subscribe({
       next: (data) => {
         const asignados = g.participantes?.filter(p => p.estado).map(p => p.id_participante) || [];
-        this.participantes = data.filter((p: any) => !asignados.includes(p.id_participante) && p.estado);
+        // Solo participantes del mismo programa que el grupo (Educación / Mujeres).
+        const mismoPrograma = (p: any): boolean => {
+          if (g.id_programa && p.id_programa) return p.id_programa === g.id_programa;
+          const ng = (g.programa_nombre || '').toLowerCase();
+          const np = (p.programa_nombre || '').toLowerCase();
+          if (ng.includes('mujer')) return np.includes('mujer');
+          if (ng.includes('educac')) return np.includes('educac');
+          return true;
+        };
+        this.participantes = data.filter((p: any) => !asignados.includes(p.id_participante) && p.estado && mismoPrograma(p));
         this.participantesFiltrados = [...this.participantes];
       },
       error: () => this.showToast('error', 'No se pudieron cargar los participantes')

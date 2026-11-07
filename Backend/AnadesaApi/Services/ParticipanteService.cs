@@ -340,7 +340,7 @@ END";
         });
     }
 
-    public async Task ActualizarFotografiaAsync(int idParticipante, string nombreArchivo, string rutaFotografia)
+    public async Task ActualizarFotografiaAsync(int idParticipante, string nombreArchivo, string rutaFotografia, byte[]? contenido = null)
     {
         await Task.Run(() =>
         {
@@ -352,7 +352,44 @@ END";
             cmd.Parameters.AddWithValue("@nombre_archivo", nombreArchivo);
             cmd.Parameters.AddWithValue("@ruta_fotografia", rutaFotografia);
             cmd.ExecuteNonQuery();
+
+            // Bytes en BD: la foto sobrevive redeploys (el disco del contenedor es efimero).
+            if (contenido != null && contenido.Length > 0)
+            {
+                try
+                {
+                    using var cmdFoto = conn.CreateCommand();
+                    cmdFoto.CommandText = "UPDATE fotografias_participante SET contenido = @bytes WHERE nombre_archivo = @n";
+                    cmdFoto.Parameters.AddWithValue("@bytes", contenido);
+                    cmdFoto.Parameters.AddWithValue("@n", nombreArchivo);
+                    cmdFoto.ExecuteNonQuery();
+                }
+                catch (Exception)
+                {
+                    // Columna 'contenido' no existe aun (ejecute add_contenido_foto.sql);
+                    // la foto sigue disponible desde el archivo en disco.
+                }
+            }
         });
+    }
+
+    /// <summary>Bytes de la foto desde la BD (si la columna existe); null si no.</summary>
+    public async Task<byte[]?> ObtenerContenidoFotoAsync(string nombreArchivo)
+    {
+        try
+        {
+            using var conn = CreateConnection();
+            await conn.OpenAsync();
+            await using var cmd = conn.CreateCommand();
+            cmd.CommandText = "SELECT TOP 1 contenido FROM fotografias_participante WHERE nombre_archivo = @n";
+            cmd.Parameters.AddWithValue("@n", nombreArchivo);
+            var result = await cmd.ExecuteScalarAsync();
+            return result as byte[];
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     public async Task LimpiarRutasAntiguasAsync()

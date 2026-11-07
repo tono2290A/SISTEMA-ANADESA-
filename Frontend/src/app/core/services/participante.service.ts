@@ -48,6 +48,8 @@ export class ParticipanteService {
   getFotoUrl(ruta?: string): string {
     if (!ruta) return '';
     if (ruta.startsWith('http')) return ruta;
+    // /fotos/x.jpg -> /api/fotos/x.jpg (sirve desde BD/disco y sobrevive redeploys).
+    if (ruta.startsWith('/fotos/')) return `${environment.apiUrl}/fotos/${ruta.substring(8)}`;
     return this.baseUrl + ruta;
   }
 }

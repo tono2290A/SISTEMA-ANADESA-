@@ -634,11 +634,21 @@ export class ActividadesComponent implements OnInit {
     this.grupoService.ObtenerParticipantes().pipe(timeout(15000)).subscribe({
       next: ps => {
         const asignados = (det.participantes || []).filter(p => p.estado).map(p => p.id_participante);
-        this.disponiblesGrupo = ps.filter((p: any) => p.estado && !asignados.includes(p.id_participante));
+        // Solo participantes del mismo programa que el grupo (Educación / Mujeres).
+        this.disponiblesGrupo = ps.filter((p: any) =>
+          p.estado && !asignados.includes(p.id_participante) && this.mismoProgramaGrupo(p, det));
         this.selAgregarGrupo = new Set(this.disponiblesGrupo.map((p: any) => p.id_participante));
       },
       error: () => this.showToast('error', 'No se pudieron cargar los participantes.')
     });
+  }
+
+  /** ¿El participante pertenece al programa del grupo? Compara id_programa o nombre. */
+  private mismoProgramaGrupo(p: any, g: Grupo): boolean {
+    if (g?.id_programa && p?.id_programa) return p.id_programa === g.id_programa;
+    const clave = this.alcanceService.claveDe(g?.programa_nombre);
+    if (clave) return this.alcanceService.coincide(p?.programa_nombre, clave);
+    return true;
   }
 
   nombreParticipante(p: any): string {

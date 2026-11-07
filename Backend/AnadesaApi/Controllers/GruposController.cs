@@ -119,6 +119,14 @@ public class GruposController : ControladorConPermisos
         if (!await PuedeGestionarGrupos()) return SinPermiso("asignar participantes");
         if (await BloqueoGrupo(id) is ActionResult bloqueo) return bloqueo;
         if (!await ParticipanteEnAlcanceAsync(request.id_participante)) return ProgramaAjeno();
+        // El participante debe ser del mismo programa que el grupo (Educación/Mujeres).
+        var idProgGrupo = await _alcance.ProgramaDeGrupoAsync(id);
+        if (idProgGrupo != null)
+        {
+            var idProgPart = AlcancePrograma.IdPorFragmento(await _alcance.TipoProgramaParticipanteAsync(request.id_participante));
+            if (idProgPart != null && idProgPart != idProgGrupo)
+                return BadRequest(new { message = "El participante no pertenece al programa de este grupo." });
+        }
         var result = await _grupoService.AsignarParticipanteAsync(id, request);
         if (result == null) return BadRequest(new { message = "El participante ya está asignado a este grupo" });
         return Ok(result);
