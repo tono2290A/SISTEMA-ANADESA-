@@ -401,7 +401,16 @@
 
           <div class="grupo-panel-cols">
             <div class="grupo-col">
-              <h4>Miembros del grupo ({{ miembrosVisibles.length }})</h4>
+              <h4>
+                Miembros del grupo ({{ miembrosVisibles.length }})
+                <span class="asis-hint"><i class="fas fa-clipboard-check"></i> Asistencia ✓ / ✗</span>
+              </h4>
+              <div class="grupo-asis-fecha">
+                <i class="fas fa-calendar-day"></i>
+                <input type="date" class="form-input" [(ngModel)]="fechaAsistenciaGrupo" (ngModelChange)="cargarAsistenciaGrupo()">
+                <span class="asis-resumen" *ngIf="cargandoAsistenciaGrupo"><i class="fas fa-spinner fa-spin"></i></span>
+                <span class="asis-resumen" *ngIf="!cargandoAsistenciaGrupo">{{ asistenciaGrupoResumen }}</span>
+              </div>
               <div class="loading-state" *ngIf="grupoDetalleCargando" style="height:80px;">
                 <div class="spinner-sm"></div><span>Cargando...</span>
               </div>
@@ -411,9 +420,19 @@
               <div class="miembros-lista" *ngIf="!grupoDetalleCargando && miembrosVisibles.length > 0">
                 <div class="miembro-item" *ngFor="let m of miembrosVisibles">
                   <span class="miembro-nombre">{{ m.participante_nombre }}</span>
-                  <button class="btn-icon-sm btn-delete" title="Remover del grupo" *ngIf="puedeCrearGrupos" (click)="confirmarRemoverMiembro(m)">
-                    <i class="fas fa-times"></i>
-                  </button>
+                  <span class="miembro-asis">
+                    <button type="button" class="btn-asis btn-asis-ok" title="Presente"
+                      [class.asis-activo]="asistenciaGrupoMap[m.id_participante] === true"
+                      [disabled]="marcandoAsistenciaGrupo === m.id_participante || asistenciaGrupoMap[m.id_participante] === true"
+                      (click)="marcarAsistenciaGrupo(m, true)">✓</button>
+                    <button type="button" class="btn-asis btn-asis-no" title="Ausente"
+                      [class.asis-activo]="asistenciaGrupoMap[m.id_participante] === false"
+                      [disabled]="marcandoAsistenciaGrupo === m.id_participante || asistenciaGrupoMap[m.id_participante] === false"
+                      (click)="marcarAsistenciaGrupo(m, false)">✗</button>
+                    <button class="btn-icon-sm btn-delete" title="Remover del grupo" *ngIf="puedeCrearGrupos" (click)="confirmarRemoverMiembro(m)">
+                      <i class="fas fa-times"></i>
+                    </button>
+                  </span>
                 </div>
               </div>
             </div>
@@ -571,6 +590,20 @@
     [modoHtml]="true"
     (cerrarEvent)="mostrarReporte = false">
   </app-reporte-preview>
+
+  <!-- Pantalla emergente de confirmación de asistencia -->
+  <div class="asis-popup-overlay" *ngIf="popupAsistencia" (click)="cerrarPopupAsistencia()">
+    <div class="asis-popup" (click)="$event.stopPropagation()">
+      <button class="asis-popup-x" title="Cerrar" (click)="cerrarPopupAsistencia()">&times;</button>
+      <div class="asis-popup-icon" [class.presente]="popupAsistencia.presente" [class.ausente]="!popupAsistencia.presente">
+        {{ popupAsistencia.presente ? '✓' : '✗' }}
+      </div>
+      <div class="asis-popup-texto">
+        <strong>Asistencia tomada</strong>
+        <span>{{ popupAsistencia.nombre }} — {{ popupAsistencia.presente ? 'Presente' : 'Ausente' }}</span>
+      </div>
+    </div>
+  </div>
 
   <!-- Toasts -->
   <div class="toast-container">

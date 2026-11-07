@@ -44,3 +44,11 @@ public class AsignarParticipanteGrupoRequest
 {
     public int id_participante { get; set; }
 }
+
+public class AsistenciaGrupoRequest
+{
+    public int id_participante { get; set; }
+    /// <summary>yyyy-MM-dd; vacío = hoy.</summary>
+    public string? fecha { get; set; }
+    public bool presente { get; set; }
+}

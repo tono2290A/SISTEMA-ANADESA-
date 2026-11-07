@@ -104,11 +104,22 @@ export class ActividadesComponent implements OnInit {
   detalleParticipantes: ParticipanteAsignado[] = [];
   cargandoDetalle = false;
 
+  // Asistencia del grupo (panel de miembros) por fecha.
+  fechaAsistenciaGrupo = '';
+  asistenciaGrupoMap: Record<number, boolean> = {};
+  cargandoAsistenciaGrupo = false;
+  marcandoAsistenciaGrupo: number | null = null;
+
+  // Pantalla emergente de confirmación de asistencia (actividad o grupo).
+  popupAsistencia: { nombre: string; presente: boolean } | null = null;
+  private popupAsistenciaTimer: ReturnType<typeof setTimeout> | null = null;
+
   constructor(private actividadService: ActividadService, private grupoService: GrupoService,
               private alcanceService: AlcanceService, private route: ActivatedRoute,
               private auth: AuthService) {
     this.subTab = this.alcanceService.inicial;
     this.puedeCrearGrupos = !!this.auth.getCurrentUser()?.puede_crear_grupos;
+    this.fechaAsistenciaGrupo = this.hoyISO();
   }
 
   get conteoTabs(): Record<ProgramaClave, number> {
@@ -610,11 +621,14 @@ export class ActividadesComponent implements OnInit {
     this.selAgregarGrupo = new Set();
     this.filtroPartGrupo = '';
     this.disponiblesGrupo = [];
+    this.fechaAsistenciaGrupo = this.hoyISO();
+    this.asistenciaGrupoMap = {};
     this.grupoService.ObtenerPorId(g.id_grupo).pipe(timeout(15000)).subscribe({
       next: det => {
         this.grupoDetalle = det;
         this.grupoDetalleCargando = false;
         this.cargarDisponiblesGrupo(det);
+        this.cargarAsistenciaGrupo();
       },
       error: () => {
         this.grupoDetalleCargando = false;
@@ -628,6 +642,7 @@ export class ActividadesComponent implements OnInit {
     this.grupoDetalle = null;
     this.disponiblesGrupo = [];
     this.selAgregarGrupo = new Set();
+    this.asistenciaGrupoMap = {};
   }
 
   private cargarDisponiblesGrupo(det: Grupo) {
@@ -754,7 +769,7 @@ export class ActividadesComponent implements OnInit {
       next: () => {
         this.asistenciaMap = { ...this.asistenciaMap, [p.id_participante]: nuevo };
         this.marcandoAsistencia = null;
-        this.showToast('success', `Asistencia tomada: ${p.nombre} ${nuevo ? '✓ presente' : '✗ ausente'}`);
+        this.mostrarPopupAsistencia(p.nombre, nuevo);
       },
       error: (err) => {
         this.marcandoAsistencia = null;
@@ -765,6 +780,62 @@ export class ActividadesComponent implements OnInit {
 
   asistenciaTexto(id: number): string {
     return this.asistenciaMap[id] === true ? 'Presente' : this.asistenciaMap[id] === false ? 'Ausente' : 'Sin marcar';
+  }
+
+  /* --------------------- ASISTENCIA DEL GRUPO (detalle) --------------------- */
+
+  private hoyISO(): string {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  cargarAsistenciaGrupo() {
+    if (!this.grupoActivo) return;
+    this.cargandoAsistenciaGrupo = true;
+    this.grupoService.ObtenerAsistenciaGrupo(this.grupoActivo.id_grupo, this.fechaAsistenciaGrupo).pipe(timeout(12000)).subscribe({
+      next: (m) => { this.asistenciaGrupoMap = m || {}; this.cargandoAsistenciaGrupo = false; },
+      error: () => { this.asistenciaGrupoMap = {}; this.cargandoAsistenciaGrupo = false; }
+    });
+  }
+
+  marcarAsistenciaGrupo(m: GrupoParticipante, presente: boolean) {
+    if (!this.grupoActivo || this.marcandoAsistenciaGrupo === m.id_participante) return;
+    if (this.asistenciaGrupoMap[m.id_participante] === presente) return;
+    this.marcandoAsistenciaGrupo = m.id_participante;
+    this.grupoService.GuardarAsistenciaGrupo(this.grupoActivo.id_grupo, {
+      id_participante: m.id_participante,
+      fecha: this.fechaAsistenciaGrupo,
+      presente
+    }).pipe(timeout(12000)).subscribe({
+      next: () => {
+        this.asistenciaGrupoMap = { ...this.asistenciaGrupoMap, [m.id_participante]: presente };
+        this.marcandoAsistenciaGrupo = null;
+        this.mostrarPopupAsistencia(m.participante_nombre || `Participante ${m.id_participante}`, presente);
+      },
+      error: (err) => {
+        this.marcandoAsistenciaGrupo = null;
+        this.showToast('error', err?.error?.message || 'No se pudo guardar la asistencia del grupo');
+      }
+    });
+  }
+
+  get asistenciaGrupoResumen(): string {
+    const vals = Object.values(this.asistenciaGrupoMap);
+    const pres = vals.filter(v => v).length;
+    return `${pres} presentes / ${vals.length} marcados`;
+  }
+
+  /* --------------------- PANTALLA EMERGENTE DE ASISTENCIA --------------------- */
+
+  private mostrarPopupAsistencia(nombre: string, presente: boolean) {
+    this.popupAsistencia = { nombre, presente };
+    if (this.popupAsistenciaTimer) clearTimeout(this.popupAsistenciaTimer);
+    this.popupAsistenciaTimer = setTimeout(() => this.popupAsistencia = null, 3500);
+  }
+
+  cerrarPopupAsistencia() {
+    this.popupAsistencia = null;
+    if (this.popupAsistenciaTimer) clearTimeout(this.popupAsistenciaTimer);
   }
 
   get detalleAsignados(): ParticipanteAsignado[] {

@@ -146,4 +146,41 @@ public class GruposController : ControladorConPermisos
         if (!result) return NotFound();
         return Ok(new { message = "Participante removido del grupo" });
     }
+
+    /* ------------------------- ASISTENCIA DEL GRUPO ------------------------- */
+
+    /// <summary>
+    /// ¿Puede tomar asistencia del grupo? Administrador o permiso individual
+    /// (puede_crear_grupos), o permiso Crear/Actualizar en Actividades (facilitadores).
+    /// </summary>
+    private async Task<bool> PuedeAsistirGrupos()
+    {
+        if (await PuedeGestionarGrupos()) return true;
+        var todos = await TodosLosPermisos();
+        var m5 = todos.FirstOrDefault(m => m.id_modulo == 5)?.permisos;
+        return m5 != null && (m5.Contains("Actualizar") || m5.Contains("Crear"));
+    }
+
+    private static DateTime ParseFechaAsistencia(string? fecha) =>
+        DateTime.TryParse(fecha, out var f) ? f.Date : DateTime.Today;
+
+    /// <summary>Asistencia del grupo en ?fecha=yyyy-MM-dd (hoy por defecto): { id_participante: bool }.</summary>
+    [HttpGet("{id}/asistencia")]
+    public async Task<ActionResult<Dictionary<int, bool>>> ObtenerAsistencia(int id, [FromQuery] string? fecha)
+    {
+        if (!await PuedeConsultarGrupos()) return SinPermiso("consultar");
+        if (await BloqueoGrupo(id) is ActionResult bloqueo) return bloqueo;
+        return Ok(await _grupoService.ObtenerAsistenciaAsync(id, ParseFechaAsistencia(fecha)));
+    }
+
+    /// <summary>Marca presente/ausente de un miembro activo del grupo en la fecha (upsert).</summary>
+    [HttpPost("{id}/asistencia")]
+    public async Task<IActionResult> GuardarAsistencia(int id, [FromBody] AsistenciaGrupoRequest request)
+    {
+        if (!await PuedeAsistirGrupos()) return SinPermiso("tomar asistencia");
+        if (await BloqueoGrupo(id) is ActionResult bloqueo) return bloqueo;
+        var ok = await _grupoService.GuardarAsistenciaAsync(id, request.id_participante, ParseFechaAsistencia(request.fecha), request.presente);
+        if (!ok) return BadRequest(new { message = "El participante no es miembro activo de este grupo." });
+        return Ok(new { message = "Asistencia guardada" });
+    }
 }

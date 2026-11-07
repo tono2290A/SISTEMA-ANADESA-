@@ -189,4 +189,56 @@ public class GrupoService
             return true;
         });
     }
+
+    /// <summary>Asistencia del grupo en una fecha: id_participante -> presente.</summary>
+    public async Task<Dictionary<int, bool>> ObtenerAsistenciaAsync(int idGrupo, DateTime fecha)
+    {
+        return await Task.Run(() =>
+        {
+            var mapa = new Dictionary<int, bool>();
+            using var conn = CreateConnection();
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "SELECT id_participante, presente FROM asistencia_grupo WHERE id_grupo = @g AND fecha = @f";
+            cmd.Parameters.AddWithValue("@g", idGrupo);
+            cmd.Parameters.AddWithValue("@f", fecha.Date);
+            using var r = cmd.ExecuteReader();
+            while (r.Read()) mapa[r.GetInt32(0)] = r.GetBoolean(1);
+            return mapa;
+        });
+    }
+
+    /// <summary>
+    /// Guarda (inserta o actualiza) la asistencia de un miembro ACTIVO del grupo
+    /// en la fecha indicada. Devuelve false si el participante no es miembro.
+    /// </summary>
+    public async Task<bool> GuardarAsistenciaAsync(int idGrupo, int idParticipante, DateTime fecha, bool presente)
+    {
+        using var conn = CreateConnection();
+        await conn.OpenAsync();
+
+        await using (var cmdMiembro = conn.CreateCommand())
+        {
+            cmdMiembro.CommandText =
+                "SELECT COUNT(*) FROM grupo_participantes WHERE id_grupo = @g AND id_participante = @p AND estado = 1";
+            cmdMiembro.Parameters.AddWithValue("@g", idGrupo);
+            cmdMiembro.Parameters.AddWithValue("@p", idParticipante);
+            if (Convert.ToInt32(await cmdMiembro.ExecuteScalarAsync()) == 0) return false;
+        }
+
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+IF EXISTS (SELECT 1 FROM asistencia_grupo WHERE id_grupo = @g AND id_participante = @p AND fecha = @f)
+    UPDATE asistencia_grupo SET presente = @presente, fecha_registro = GETDATE()
+    WHERE id_grupo = @g AND id_participante = @p AND fecha = @f
+ELSE
+    INSERT INTO asistencia_grupo (id_grupo, id_participante, fecha, presente)
+    VALUES (@g, @p, @f, @presente)";
+        cmd.Parameters.AddWithValue("@g", idGrupo);
+        cmd.Parameters.AddWithValue("@p", idParticipante);
+        cmd.Parameters.AddWithValue("@f", fecha.Date);
+        cmd.Parameters.AddWithValue("@presente", presente);
+        await cmd.ExecuteNonQueryAsync();
+        return true;
+    }
 }

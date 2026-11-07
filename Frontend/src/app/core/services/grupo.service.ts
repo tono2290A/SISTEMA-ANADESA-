@@ -45,4 +45,14 @@ export class GrupoService {
   ObtenerParticipantes(): Observable<any[]> {
     return this.http.get<any[]>(`${environment.apiUrl}/participantes`);
   }
+
+  /** Asistencia del grupo en la fecha (yyyy-MM-dd): { id_participante: presente }. */
+  ObtenerAsistenciaGrupo(idGrupo: number, fecha: string): Observable<Record<number, boolean>> {
+    return this.http.get<Record<number, boolean>>(`${this.apiUrl}/${idGrupo}/asistencia`, { params: { fecha } });
+  }
+
+  /** Guarda presente/ausente de un miembro del grupo en la fecha. */
+  GuardarAsistenciaGrupo(idGrupo: number, body: { id_participante: number; fecha: string; presente: boolean }): Observable<any> {
+    return this.http.post(`${this.apiUrl}/${idGrupo}/asistencia`, body);
+  }
 }
